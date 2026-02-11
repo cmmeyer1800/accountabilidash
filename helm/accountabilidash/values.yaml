@@ -16,20 +16,29 @@ ingress:
   tls: []
 
 # ── PostgreSQL ───────────────────────────────────────────────────────────────
+# The chart does NOT deploy PostgreSQL by default. Choose one:
+# 1. useCloudNativePG: true  - Deploy via CloudNative-PG operator (installed as dep)
+# 2. useCloudNativePG: false - You configure an external connection (see external)
 postgres:
-  enabled: true
-  image:
-    repository: postgres
-    tag: "17-alpine"
-    pullPolicy: IfNotPresent
+  useCloudNativePG: false
   auth:
     username: postgres
     password: postgres
     database: accountabilidash
-  persistence:
-    enabled: true
-    size: 8Gi
-    storageClass: ""
+  # CloudNative-PG (used when useCloudNativePG is true)
+  cnpg:
+    clusterName: accountabilidash-db
+    instances: 1
+    postgresVersion: "17"
+    storage:
+      size: 8Gi
+      storageClass: ""
+  # External connection (required when useCloudNativePG is false)
+  external:
+    host: ""
+    port: "5432"
+    existingSecret: ""
+    passwordKey: "password"
 
 # ── Backend (FastAPI) ────────────────────────────────────────────────────────
 backend:

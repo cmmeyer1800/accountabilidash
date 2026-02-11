@@ -1,0 +1,22 @@
+{{- if .Values.postgres.useCloudNativePG }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgres.cnpg.clusterName }}
+  labels:
+    {{- include "accountabilidash.postgres.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgres.cnpg.instances }}
+  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .Values.postgres.cnpg.postgresVersion }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.auth.database }}
+      owner: {{ .Values.postgres.auth.username }}
+      secret:
+        name: {{ include "accountabilidash.fullname" . }}-postgres
+  storage:
+    size: {{ .Values.postgres.cnpg.storage.size }}
+    {{- if .Values.postgres.cnpg.storage.storageClass }}
+    storageClass: {{ .Values.postgres.cnpg.storage.storageClass }}
+    {{- end }}
+{{- end }}

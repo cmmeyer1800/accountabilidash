@@ -28,9 +28,12 @@ spec:
             - head
           env:
             - name: POSTGRES_HOST
-              value: {{ include "accountabilidash.fullname" . }}-postgres
+              value: {{ include "accountabilidash.postgres.host" . | trim }}
             - name: POSTGRES_PORT
-              value: "5432"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-port
             - name: POSTGRES_USER
               valueFrom:
                 configMapKeyRef:
@@ -44,8 +47,8 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "accountabilidash.fullname" . }}-postgres
-                  key: postgres-password
+                  name: {{ include "accountabilidash.postgres.secretName" . | trim }}
+                  key: {{ include "accountabilidash.postgres.passwordKey" . }}
       containers:
         - name: backend
           image: {{ include "accountabilidash.backend.image" . }}
@@ -56,9 +59,12 @@ spec:
               protocol: TCP
           env:
             - name: POSTGRES_HOST
-              value: {{ include "accountabilidash.fullname" . }}-postgres
+              value: {{ include "accountabilidash.postgres.host" . | trim }}
             - name: POSTGRES_PORT
-              value: "5432"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-port
             - name: POSTGRES_USER
               valueFrom:
                 configMapKeyRef:
@@ -72,8 +78,8 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "accountabilidash.fullname" . }}-postgres
-                  key: postgres-password
+                  name: {{ include "accountabilidash.postgres.secretName" . | trim }}
+                  key: {{ include "accountabilidash.postgres.passwordKey" . }}
             - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:

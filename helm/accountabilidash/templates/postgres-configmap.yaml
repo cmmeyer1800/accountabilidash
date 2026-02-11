@@ -1,4 +1,3 @@
-{{- if .Values.postgres.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,4 +7,4 @@ metadata:
 data:
   postgres-user: {{ .Values.postgres.auth.username | quote }}
   postgres-db: {{ .Values.postgres.auth.database | quote }}
-{{- end }}
+  postgres-port: {{ include "accountabilidash.postgres.port" . | trim }}

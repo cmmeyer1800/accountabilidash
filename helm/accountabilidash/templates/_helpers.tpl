@@ -100,6 +100,51 @@ ghcr.io/owner/accountabilidash-backend:tag. Otherwise uses repository:tag.
 {{- end }}
 
 {{/*
+Postgres host for backend connection. When useCloudNativePG: <cluster-name>-rw.
+Otherwise: postgres.external.host (user must set).
+*/}}
+{{- define "accountabilidash.postgres.host" -}}
+{{- if .Values.postgres.useCloudNativePG -}}
+{{- .Values.postgres.cnpg.clusterName }}-rw
+{{- else -}}
+{{- .Values.postgres.external.host -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Postgres port for backend connection. CNPG uses 5432, external uses postgres.external.port.
+*/}}
+{{- define "accountabilidash.postgres.port" -}}
+{{- if .Values.postgres.useCloudNativePG -}}
+5432
+{{- else -}}
+{{- .Values.postgres.external.port | default "5432" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Postgres secret name for password. CNPG: chart-created secret. External: user-provided.
+*/}}
+{{- define "accountabilidash.postgres.secretName" -}}
+{{- if .Values.postgres.useCloudNativePG -}}
+{{- include "accountabilidash.fullname" . }}-postgres
+{{- else -}}
+{{- .Values.postgres.external.existingSecret -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Postgres secret key for password. CNPG uses password, external uses postgres.external.passwordKey.
+*/}}
+{{- define "accountabilidash.postgres.passwordKey" -}}
+{{- if .Values.postgres.useCloudNativePG -}}
+password
+{{- else -}}
+{{- .Values.postgres.external.passwordKey | default "password" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Frontend image. Same logic as backend.
 */}}
 {{- define "accountabilidash.frontend.image" -}}
