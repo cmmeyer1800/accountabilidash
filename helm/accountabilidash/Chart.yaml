@@ -10,8 +10,6 @@ keywords:
   - fullstack
 maintainers:
   - name: Accountabilidash Team
-dependencies:
-  - name: cloudnative-pg
-    version: "0.27.1"
-    repository: https://cloudnative-pg.github.io/charts
-    condition: postgres.useCloudNativePG
+# CloudNative-PG operator is NOT a dependency - install it separately to avoid CRD
+# annotation size limits with ArgoCD. When useCloudNativePG=true we only create
+# the Cluster CR. See README for operator install instructions.

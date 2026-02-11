@@ -17,7 +17,7 @@ ingress:
 
 # ── PostgreSQL ───────────────────────────────────────────────────────────────
 # The chart does NOT deploy PostgreSQL by default. Choose one:
-# 1. useCloudNativePG: true  - Deploy via CloudNative-PG operator (installed as dep)
+# 1. useCloudNativePG: true  - Create Cluster CR (operator must be installed separately)
 # 2. useCloudNativePG: false - You configure an external connection (see external)
 postgres:
   useCloudNativePG: false
