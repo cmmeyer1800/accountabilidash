@@ -1,0 +1,12 @@
+apiVersion: v2
+name: accountabilidash
+description: Helm chart for Accountabilidash - a fullstack goal tracking application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - goals
+  - accountability
+  - fullstack
+maintainers:
+  - name: Accountabilidash Team

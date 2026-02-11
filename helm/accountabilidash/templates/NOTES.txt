@@ -1,0 +1,17 @@
+Accountabilidash has been deployed!
+
+1. Images: Using {{ .Values.global.imageRegistry }}{{ if .Values.global.imageOwner }}/{{ .Values.global.imageOwner }}{{ end }}/accountabilidash-backend (and -frontend).
+   If using GHCR, ensure CI has built and pushed images. Set global.imageOwner to your GitHub org.
+
+2. Get the application URL:
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+   Run: kubectl get svc -n {{ .Release.Namespace }} -l "app.kubernetes.io/instance={{ .Release.Name }}" -o wide
+   Use port-forward to access: kubectl port-forward svc/{{ include "accountabilidash.fullname" . }}-frontend 3000:3000
+{{- end }}
+
+3. For production, set a strong secretKey and postgres.auth.password via values or --set.

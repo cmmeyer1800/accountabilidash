@@ -1,0 +1,81 @@
+# ── Global ───────────────────────────────────────────────────────────────────
+# Default: images from ghcr.io. Set imageOwner to your GitHub org (e.g. myorg).
+# The CI workflow pushes to ghcr.io/<org>/accountabilidash-backend and -frontend.
+global:
+  imageRegistry: ghcr.io
+  imageOwner: cmmeyer1800
+  imagePullSecrets: []
+
+# ── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: accountabilidash.local
+  tls: []
+
+# ── PostgreSQL ───────────────────────────────────────────────────────────────
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    username: postgres
+    password: postgres
+    database: accountabilidash
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+
+# ── Backend (FastAPI) ────────────────────────────────────────────────────────
+backend:
+  image:
+    repository: accountabilidash-backend  # With global.imageOwner: ghcr.io/owner/accountabilidash-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  build:
+    context: ../../backend
+    dockerfile: Dockerfile
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  env:
+    DEBUG: "false"
+    ENVIRONMENT: production
+    LOG_LEVEL: INFO
+    LOG_JSON: "true"
+    ALLOW_REGISTRATION: "true"
+    ACCESS_TOKEN_EXPIRE_MINUTES: "120"
+  secretKey: ""
+  # Override allowed origins - will be set to ingress host(s) when ingress enabled
+  allowedOrigins: []
+
+# ── Frontend (Vite React) ────────────────────────────────────────────────────
+frontend:
+  image:
+    repository: accountabilidash-frontend  # With global.imageOwner: ghcr.io/owner/accountabilidash-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  build:
+    context: ../../frontend
+    dockerfile: Dockerfile
+    args:
+      # Use relative /api when served from same host (ingress)
+      VITE_API_BASE_URL: ""
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"

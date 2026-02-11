@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "accountabilidash.fullname" . }}-backend
+  labels:
+    {{- include "accountabilidash.backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "accountabilidash.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "accountabilidash.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: migrate
+          image: {{ include "accountabilidash.backend.image" . }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command:
+            - alembic
+            - upgrade
+            - head
+          env:
+            - name: POSTGRES_HOST
+              value: {{ include "accountabilidash.fullname" . }}-postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-user
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-db
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres
+                  key: postgres-password
+      containers:
+        - name: backend
+          image: {{ include "accountabilidash.backend.image" . }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: POSTGRES_HOST
+              value: {{ include "accountabilidash.fullname" . }}-postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-user
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres-config
+                  key: postgres-db
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-postgres
+                  key: postgres-password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.fullname" . }}-backend
+                  key: secret-key
+            - name: DEBUG
+              value: {{ .Values.backend.env.DEBUG | quote }}
+            - name: ENVIRONMENT
+              value: {{ .Values.backend.env.ENVIRONMENT | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.backend.env.LOG_LEVEL | quote }}
+            - name: LOG_JSON
+              value: {{ .Values.backend.env.LOG_JSON | quote }}
+            - name: ALLOW_REGISTRATION
+              value: {{ .Values.backend.env.ALLOW_REGISTRATION | quote }}
+            - name: ACCESS_TOKEN_EXPIRE_MINUTES
+              value: {{ .Values.backend.env.ACCESS_TOKEN_EXPIRE_MINUTES | quote }}
+            - name: ALLOWED_ORIGINS
+              value: {{ if .Values.ingress.enabled }}{{ printf "[\"https://%s\", \"http://%s\"]" (index .Values.ingress.hosts 0).host (index .Values.ingress.hosts 0).host | quote }}{{ else }}{{ .Values.backend.allowedOrigins | toJson | quote }}{{ end }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
