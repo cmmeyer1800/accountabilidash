@@ -1,8 +1,9 @@
 """Goal CRUD endpoints."""
 
 import uuid
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -12,12 +13,15 @@ from app.models.goals import (
     CompletionRead,
     GoalCreate,
     GoalRead,
+    GoalTrends,
     GoalUpdate,
     GoalWithProgress,
 )
 from app.schemas.user import User
 from app.services.completions import (
     check_in,
+    get_all_goals_trends,
+    get_goal_trends,
     list_completions_for_period,
     list_goals_with_progress,
 )
@@ -28,8 +32,19 @@ from app.services.goals import (
     list_goals,
     update_goal,
 )
+from app.services.strava_sync import sync_strava_to_goals
 
 router = APIRouter(prefix="/goals", tags=["goals"])
+
+
+@router.post("/sync-strava")
+async def sync_strava(
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Sync Strava activities to goals. Creates completions for matching activities."""
+    result = await sync_strava_to_goals(session, current_user)
+    return result
 
 
 @router.get("/dashboard", response_model=list[GoalWithProgress])
@@ -64,9 +79,58 @@ async def list_goal_completions(
 ) -> list[CompletionRead]:
     """List completions for a goal in the current period."""
     completions = await list_completions_for_period(
-        session, goal_id, current_user.id,
+        session,
+        goal_id,
+        current_user.id,
     )
-    return completions  # type: ignore[return-value]
+    return [CompletionRead.model_validate(c, from_attributes=True) for c in completions]
+
+
+@router.get("/trends", response_model=list[GoalTrends])
+async def get_trends(
+    start_date: date = Query(..., description="Start of date range"),
+    end_date: date = Query(..., description="End of date range"),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list[GoalTrends]:
+    """Get trend data for all goals over a date range."""
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="start_date must be before or equal to end_date",
+        )
+    return await get_all_goals_trends(
+        session,
+        current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+@router.get("/{goal_id}/trends", response_model=GoalTrends)
+async def get_goal_trends_endpoint(
+    goal_id: uuid.UUID,
+    start_date: date = Query(..., description="Start of date range"),
+    end_date: date = Query(..., description="End of date range"),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> GoalTrends:
+    """Get trend data for a single goal over a date range."""
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="start_date must be before or equal to end_date",
+        )
+    trends = await get_goal_trends(
+        session,
+        goal_id,
+        current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if trends is None:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return trends  # type: ignore[return-value]
 
 
 @router.post("", response_model=GoalRead, status_code=201)

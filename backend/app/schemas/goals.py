@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, date, datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, DateTime, Index
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Index
 from sqlmodel import Field, SQLModel
 
 
@@ -45,6 +45,10 @@ class Goal(SQLModel, table=True):
     start_date: date = Field(default_factory=date.today)
     end_date: date | None = Field(default=None)
     is_active: bool = Field(default=True)
+    strava_activity_types: list[str] | None = Field(
+        default=None,
+        sa_column=Column(JSON, nullable=True),
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(DateTime(timezone=True), nullable=False),
@@ -57,9 +61,7 @@ class Goal(SQLModel, table=True):
 
 class GoalCompletion(SQLModel, table=True):
     __tablename__ = "goal_completions"
-    __table_args__ = (
-        Index("ix_goal_completions_goal_period", "goal_id", "period_start"),
-    )
+    __table_args__ = (Index("ix_goal_completions_goal_period", "goal_id", "period_start"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     goal_id: uuid.UUID = Field(
@@ -72,6 +74,10 @@ class GoalCompletion(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     period_start: date = Field(nullable=False)
+    strava_activity_id: int | None = Field(
+        default=None,
+        sa_column=Column(BigInteger, nullable=True, index=True),
+    )
     value: float | None = Field(default=None)
     note: str | None = Field(default=None, max_length=512)
     created_at: datetime = Field(

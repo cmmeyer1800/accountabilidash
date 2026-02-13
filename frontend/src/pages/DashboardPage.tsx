@@ -19,10 +19,29 @@ export function DashboardPage() {
   const [goals, setGoals] = useState<GoalWithProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isSyncingStrava, setIsSyncingStrava] = useState(false);
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  async function handleSyncStrava() {
+    if (!(user?.strava_connected ?? false)) return;
+    setIsSyncingStrava(true);
+    setError("");
+    try {
+      await goalsApi.syncStrava();
+      await loadDashboard();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail ?? "Sync failed");
+      } else {
+        setError("Sync failed");
+      }
+    } finally {
+      setIsSyncingStrava(false);
+    }
+  }
 
   async function loadDashboard() {
     try {
@@ -61,9 +80,21 @@ export function DashboardPage() {
             Welcome back, {user?.full_name ?? user?.email}
           </p>
         </div>
-        <Link to="/goals/new">
-          <Button size="sm">New Goal</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {(user?.strava_connected ?? false) && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleSyncStrava}
+              isLoading={isSyncingStrava}
+            >
+              Sync Strava
+            </Button>
+          )}
+          <Link to="/goals/new">
+            <Button size="sm">New Goal</Button>
+          </Link>
+        </div>
       </div>
 
       {error && (

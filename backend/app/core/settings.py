@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "accountabilidash"
+    echo_db: bool = False
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -55,8 +56,15 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
+    # ── Strava OAuth ─────────────────────────────────────────────────────
+    strava_id: str = ""
+    strava_secret: str = ""
+    strava_redirect_uri: str = "http://localhost/api/v1/auth/strava/callback"
+    frontend_url: str = "http://localhost"  # Where to redirect after OAuth success
+
     # ── Auth / JWT ───────────────────────────────────────────────────────
     secret_key: str = "CHANGE-ME-in-production"
+    token_encryption_key: str = ""  # Fernet key for Strava tokens; see .env.example
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     allow_registration: bool = True  # Set False to disable public sign-up

@@ -39,6 +39,7 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    strava_connected: bool = False
 
     model_config = {"from_attributes": True}
 

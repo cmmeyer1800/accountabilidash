@@ -17,6 +17,8 @@ export function CreateGoalPage() {
         values.valueType !== "none" ? values.valueUnit || undefined : undefined,
       start_date: values.startDate || undefined,
       end_date: values.endDate || undefined,
+      strava_activity_types:
+        values.stravaActivityTypes?.length ? values.stravaActivityTypes : null,
     });
     navigate("/goals");
   }

@@ -24,3 +24,13 @@ class User(SQLModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
+    # Strava OAuth tokens (nullable = not linked)
+    strava_athlete_id: str | None = Field(default=None, max_length=64)
+    strava_access_token: str | None = Field(default=None)
+    strava_refresh_token: str | None = Field(default=None)
+    strava_expires_at: int | None = Field(default=None)  # Unix timestamp
+
+    @property
+    def strava_connected(self) -> bool:
+        """Whether the user has linked a Strava account."""
+        return bool(self.strava_access_token)

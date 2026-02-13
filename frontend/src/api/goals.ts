@@ -4,6 +4,7 @@ import type {
   Goal,
   GoalCompletion,
   GoalCreateRequest,
+  GoalTrends,
   GoalUpdateRequest,
   GoalWithProgress,
 } from "@/types/goal";
@@ -62,4 +63,41 @@ export async function getGoalCompletions(
 
 export async function deleteGoal(id: string): Promise<void> {
   await client.delete(`/api/v1/goals/${id}`);
+}
+
+export async function syncStrava(): Promise<{
+  activities_fetched: number;
+  completions_added: number;
+  goals_updated: number;
+}> {
+  const response = await client.post<{
+    activities_fetched: number;
+    completions_added: number;
+    goals_updated: number;
+  }>("/api/v1/goals/sync-strava");
+  return response.data;
+}
+
+export async function getTrends(
+  startDate: string,
+  endDate: string,
+): Promise<GoalTrends[]> {
+  const response = await client.get<GoalTrends[]>("/api/v1/goals/trends", {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data;
+}
+
+export async function getGoalTrends(
+  goalId: string,
+  startDate: string,
+  endDate: string,
+): Promise<GoalTrends> {
+  const response = await client.get<GoalTrends>(
+    `/api/v1/goals/${goalId}/trends`,
+    {
+      params: { start_date: startDate, end_date: endDate },
+    },
+  );
+  return response.data;
 }

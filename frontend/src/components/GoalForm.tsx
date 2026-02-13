@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button, Input } from "@/components/ui";
 import type { Frequency, GoalType, ValueType } from "@/types/goal";
+import { STRAVA_ACTIVITY_TYPES } from "@/types/goal";
 import axios from "axios";
 
 const selectClass =
@@ -20,6 +21,7 @@ export interface GoalFormValues {
   valueUnit: string;
   startDate: string;
   endDate: string;
+  stravaActivityTypes: string[];
 }
 
 interface GoalFormProps {
@@ -38,6 +40,7 @@ const defaults: GoalFormValues = {
   valueUnit: "",
   startDate: new Date().toISOString().split("T")[0],
   endDate: "",
+  stravaActivityTypes: [],
 };
 
 export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps) {
@@ -48,11 +51,16 @@ export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps
   const [description, setDescription] = useState(init.description);
   const [goalType, setGoalType] = useState<GoalType>(init.goalType);
   const [frequency, setFrequency] = useState<Frequency>(init.frequency);
-  const [targetCount, setTargetCount] = useState(init.targetCount);
+  const [targetCountInput, setTargetCountInput] = useState(
+    String(init.targetCount),
+  );
   const [valueType, setValueType] = useState<ValueType>(init.valueType);
   const [valueUnit, setValueUnit] = useState(init.valueUnit);
   const [startDate, setStartDate] = useState(init.startDate);
   const [endDate, setEndDate] = useState(init.endDate);
+  const [stravaActivityTypes, setStravaActivityTypes] = useState<string[]>(
+    init.stravaActivityTypes ?? [],
+  );
 
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +71,12 @@ export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps
     setIsSubmitting(true);
 
     try {
+      const parsed = parseInt(targetCountInput, 10);
+      const targetCount =
+        Number.isNaN(parsed) || parsed < 1
+          ? 1
+          : Math.min(100, parsed);
+
       await onSubmit({
         title,
         description,
@@ -73,6 +87,7 @@ export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps
         valueUnit,
         startDate,
         endDate,
+        stravaActivityTypes,
       });
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -181,8 +196,20 @@ export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps
             type="number"
             min={1}
             max={100}
-            value={String(targetCount)}
-            onChange={(e) => setTargetCount(Number(e.target.value) || 1)}
+            value={targetCountInput}
+            onChange={(e) => setTargetCountInput(e.target.value)}
+            onBlur={() => {
+              const parsed = parseInt(targetCountInput, 10);
+              if (
+                targetCountInput === "" ||
+                Number.isNaN(parsed) ||
+                parsed < 1
+              ) {
+                setTargetCountInput("1");
+              } else if (parsed > 100) {
+                setTargetCountInput("100");
+              }
+            }}
           />
         </div>
       )}
@@ -221,6 +248,41 @@ export function GoalForm({ initialValues, onSubmit, submitLabel }: GoalFormProps
           onChange={(e) => setValueUnit(e.target.value)}
         />
       )}
+
+      {/* Strava sync (optional) */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Sync from Strava (optional)
+        </label>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Select activity types to auto-complete this goal from Strava
+          activities.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {STRAVA_ACTIVITY_TYPES.map((t) => (
+            <label
+              key={t}
+              className="flex cursor-pointer items-center gap-2 rounded-full border border-zinc-300 px-3 py-1.5 text-sm transition-colors has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50 has-[:checked]:text-orange-700 dark:border-zinc-600 dark:has-[:checked]:border-orange-500 dark:has-[:checked]:bg-orange-950 dark:has-[:checked]:text-orange-300"
+            >
+              <input
+                type="checkbox"
+                checked={stravaActivityTypes.includes(t)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setStravaActivityTypes([...stravaActivityTypes, t]);
+                  } else {
+                    setStravaActivityTypes(
+                      stravaActivityTypes.filter((x) => x !== t),
+                    );
+                  }
+                }}
+                className="sr-only"
+              />
+              <span>{t}</span>
+            </label>
+          ))}
+        </div>
+      </div>
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">

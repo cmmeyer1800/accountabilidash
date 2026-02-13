@@ -30,6 +30,7 @@ async def create_goal(
         value_unit=data.value_unit,
         start_date=data.start_date or date.today(),
         end_date=data.end_date,
+        strava_activity_types=data.strava_activity_types,
     )
     session.add(goal)
     await session.flush()
@@ -84,8 +85,11 @@ async def update_goal(
 
     # Re-validate the resulting state after merging updates.
     _validate_goal_fields(
-        goal.goal_type, goal.frequency, goal.target_count,
-        goal.value_type, goal.value_unit,
+        goal.goal_type,
+        goal.frequency,
+        goal.target_count,
+        goal.value_type,
+        goal.value_unit,
     )
 
     goal.updated_at = datetime.now(UTC)

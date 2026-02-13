@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { goalsApi } from "@/api";
-import { Button } from "@/components/ui";
-import { LoadingSpinner } from "@/components/ui";
+import { Button, ConfirmModal, LoadingSpinner } from "@/components/ui";
 import type { Goal } from "@/types/goal";
 import axios from "axios";
 
@@ -23,6 +22,7 @@ export function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
 
   useEffect(() => {
     loadGoals();
@@ -47,6 +47,7 @@ export function GoalsPage() {
     try {
       await goalsApi.deleteGoal(id);
       setGoals((prev) => prev.filter((g) => g.id !== id));
+      setGoalToDelete(null);
     } catch {
       setError("Failed to delete goal.");
     }
@@ -154,7 +155,7 @@ export function GoalsPage() {
                   </svg>
                 </Link>
                 <button
-                  onClick={() => handleDelete(goal.id)}
+                  onClick={() => setGoalToDelete(goal)}
                   className="rounded p-1 text-zinc-400 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
                   title="Delete goal"
                 >
@@ -178,6 +179,20 @@ export function GoalsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={goalToDelete !== null}
+        title="Delete goal"
+        message={
+          goalToDelete
+            ? `Are you sure you want to delete "${goalToDelete.title}"? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => goalToDelete && handleDelete(goalToDelete.id)}
+        onCancel={() => setGoalToDelete(null)}
+      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ def init_db(settings: Settings) -> None:
 
     _engine = create_async_engine(
         settings.database_url,
-        echo=settings.debug,
+        echo=settings.echo_db,
         pool_pre_ping=True,
         pool_size=5,
         max_overflow=10,

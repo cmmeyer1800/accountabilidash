@@ -5,6 +5,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  logLevel:
+    process.env.VITE_REQUEST_LOG === "true" ? "info" : "silent",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -12,9 +14,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,
+    watch: {
+      usePolling: true,
+    },
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_PROXY_TARGET ?? "http://localhost:8000",
         changeOrigin: true,
       },
     },

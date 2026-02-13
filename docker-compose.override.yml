@@ -1,0 +1,16 @@
+# Dev overrides: frontend runs Vite dev server with hot reload
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_PROXY_TARGET=http://backend:8000
+      - VITE_REQUEST_LOG=false
+    command: npm run dev

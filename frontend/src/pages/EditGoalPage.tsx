@@ -42,6 +42,9 @@ export function EditGoalPage() {
         values.valueType !== "none" ? values.valueUnit || null : null,
       start_date: values.startDate || null,
       end_date: values.endDate || null,
+      strava_activity_types: values.stravaActivityTypes?.length
+        ? values.stravaActivityTypes
+        : null,
     });
     navigate("/goals");
   }
@@ -74,6 +77,7 @@ export function EditGoalPage() {
     valueUnit: goal.value_unit ?? "",
     startDate: goal.start_date,
     endDate: goal.end_date ?? "",
+    stravaActivityTypes: goal.strava_activity_types ?? [],
   };
 
   return (

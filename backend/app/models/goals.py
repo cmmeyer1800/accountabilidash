@@ -20,12 +20,16 @@ class GoalCreate(BaseModel):
     value_unit: str | None = None
     start_date: date | None = None
     end_date: date | None = None
+    strava_activity_types: list[str] | None = None
 
     @model_validator(mode="after")
     def validate_goal_consistency(self) -> "GoalCreate":
         _validate_goal_fields(
-            self.goal_type, self.frequency, self.target_count,
-            self.value_type, self.value_unit,
+            self.goal_type,
+            self.frequency,
+            self.target_count,
+            self.value_type,
+            self.value_unit,
         )
         return self
 
@@ -41,6 +45,7 @@ class GoalUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     is_active: bool | None = None
+    strava_activity_types: list[str] | None = None
 
     # Sentinel to distinguish "field not sent" from "field explicitly set to null".
     _unset = object()
@@ -69,6 +74,7 @@ class GoalRead(BaseModel):
     start_date: date
     end_date: date | None
     is_active: bool
+    strava_activity_types: list[str] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -92,6 +98,30 @@ class GoalWithProgress(GoalRead):
 
     period_completions: int = 0
     is_completed: bool = False
+
+
+class PeriodTrendPoint(BaseModel):
+    """Single period's completion stats for trend charts."""
+
+    period_start: date
+    completion_count: int
+    target_count: int
+    is_completed: bool
+    sum_value: float | None = None
+    avg_value: float | None = None
+
+
+class GoalTrends(BaseModel):
+    """Trend data for a single goal over a date range."""
+
+    goal: GoalRead
+    periods: list[PeriodTrendPoint]
+
+
+class AllGoalsTrends(BaseModel):
+    """Trend data for all goals over a date range."""
+
+    goals: list[GoalTrends]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────

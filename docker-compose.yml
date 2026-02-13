@@ -3,9 +3,9 @@ services:
     image: postgres:17-alpine
     container_name: accountabilidash-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: accountabilidash
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-accountabilidash}
     ports:
       - "5432:5432"
     volumes:
@@ -24,17 +24,19 @@ services:
       - "8000"
     environment:
       POSTGRES_HOST: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: accountabilidash
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-accountabilidash}
       POSTGRES_PORT: 5432
       DEBUG: "true"
       ENVIRONMENT: development
-      SECRET_KEY: docker-dev-secret-change-in-prod
+      SECRET_KEY: ${SECRET_KEY:-docker-dev-secret-change-in-prod}
       LOG_LEVEL: INFO
       LOG_JSON: "false"
       ALLOW_REGISTRATION: "true"
       ALLOWED_ORIGINS: '["http://localhost"]'
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy

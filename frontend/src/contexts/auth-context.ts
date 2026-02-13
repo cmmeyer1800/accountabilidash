@@ -14,6 +14,8 @@ export interface AuthContextValue {
   register: (data: RegisterRequest) => Promise<void>;
   /** Clear local state and redirect to login. */
   logout: () => void;
+  /** Refetch the current user (e.g. after linking Strava). */
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(

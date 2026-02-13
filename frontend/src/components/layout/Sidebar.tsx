@@ -8,7 +8,9 @@ export interface SidebarLink {
 
 const navLinks: SidebarLink[] = [
   { to: "/dashboard", label: "Dashboard" },
+  { to: "/trends", label: "Trends" },
   { to: "/goals", label: "Goals" },
+  { to: "/account", label: "Account" },
 ];
 
 export function Sidebar() {

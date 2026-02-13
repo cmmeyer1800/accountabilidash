@@ -8,7 +8,12 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.models.goals import CheckInCreate, GoalWithProgress
+from app.models.goals import (
+    CheckInCreate,
+    GoalTrends,
+    GoalWithProgress,
+    PeriodTrendPoint,
+)
 from app.schemas.goals import (
     Frequency,
     Goal,
@@ -144,7 +149,8 @@ async def list_goals_with_progress(
         completions = counts.get(g.id, 0)
         is_completed = completions >= g.target_count
         progress = GoalWithProgress.model_validate(
-            g, from_attributes=True,
+            g,
+            from_attributes=True,
         )
         progress.period_completions = completions
         progress.is_completed = is_completed
@@ -174,5 +180,145 @@ async def list_completions_for_period(
         .where(GoalCompletion.period_start == ps)
         .order_by(GoalCompletion.completed_at.desc())
     )
-    rows = (await session.execute(stmt)).scalars().all()
-    return list(rows)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+def iter_periods_in_range(
+    frequency: Frequency | None,
+    start_date: date,
+    end_date: date,
+) -> list[date]:
+    """Yield all period_start dates within [start_date, end_date]."""
+    if frequency is None or frequency == Frequency.DAILY:
+        days = (end_date - start_date).days + 1
+        return [start_date + timedelta(days=i) for i in range(days)]
+    if frequency == Frequency.WEEKLY:
+        first = compute_period_start(Frequency.WEEKLY, start_date)
+        periods: list[date] = []
+        cur = first
+        while cur <= end_date:
+            periods.append(cur)
+            cur += timedelta(days=7)
+        return periods
+    if frequency == Frequency.MONTHLY:
+        periods = []
+        cur = compute_period_start(Frequency.MONTHLY, start_date)
+        while cur <= end_date:
+            periods.append(cur)
+            if cur.month == 12:
+                cur = cur.replace(year=cur.year + 1, month=1)
+            else:
+                cur = cur.replace(month=cur.month + 1)
+        return periods
+    if frequency == Frequency.YEARLY:
+        periods = []
+        cur = compute_period_start(Frequency.YEARLY, start_date)
+        while cur <= end_date:
+            periods.append(cur)
+            cur = cur.replace(year=cur.year + 1)
+        return periods
+    return [start_date]
+
+
+async def get_goal_trends(
+    session: AsyncSession,
+    goal_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    start_date: date,
+    end_date: date,
+) -> GoalTrends | None:
+    """Return trend data for a single goal over a date range."""
+    goal = await _get_goal_if_owned(session, goal_id, user_id)
+    if goal is None:
+        return None
+
+    return await _build_goal_trends(session, goal, start_date, end_date)
+
+
+async def get_all_goals_trends(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    start_date: date,
+    end_date: date,
+) -> list[GoalTrends]:
+    """Return trend data for all active goals over a date range."""
+    stmt = (
+        select(Goal)
+        .where(Goal.user_id == user_id, Goal.is_active.is_(True))
+        .order_by(Goal.created_at.desc())
+    )
+    result = await session.execute(stmt)
+    goals = list(result.scalars().all())
+    if not goals:
+        return []
+
+    return [await _build_goal_trends(session, g, start_date, end_date) for g in goals]
+
+
+async def _get_goal_if_owned(
+    session: AsyncSession,
+    goal_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> Goal | None:
+    stmt = select(Goal).where(Goal.id == goal_id, Goal.user_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+
+async def _build_goal_trends(
+    session: AsyncSession,
+    goal: Goal,
+    start_date: date,
+    end_date: date,
+) -> GoalTrends:
+    """Build trend data for one goal."""
+    from app.models.goals import GoalRead
+
+    periods = iter_periods_in_range(goal.frequency, start_date, end_date)
+    if not periods:
+        return GoalTrends(
+            goal=GoalRead.model_validate(goal, from_attributes=True),
+            periods=[],
+        )
+
+    stmt = (
+        select(
+            GoalCompletion.period_start,
+            func.count().label("cnt"),
+            func.sum(GoalCompletion.value).label("sum_val"),
+            func.avg(GoalCompletion.value).label("avg_val"),
+        )
+        .where(
+            GoalCompletion.goal_id == goal.id,
+            GoalCompletion.period_start >= start_date,
+            GoalCompletion.period_start <= end_date,
+        )
+        .group_by(GoalCompletion.period_start)
+    )
+    rows = (await session.execute(stmt)).all()
+    by_period: dict[date, tuple[int, float | None, float | None]] = {}
+    for ps, cnt, sum_val, avg_val in rows:
+        by_period[ps] = (cnt, sum_val, avg_val)
+
+    points: list[PeriodTrendPoint] = []
+    for ps in periods:
+        cnt, sum_val, avg_val = by_period.get(ps, (0, None, None))
+        is_completed = cnt >= goal.target_count
+        points.append(
+            PeriodTrendPoint(
+                period_start=ps,
+                completion_count=cnt,
+                target_count=goal.target_count,
+                is_completed=is_completed,
+                sum_value=float(sum_val) if sum_val is not None else None,
+                avg_value=float(avg_val) if avg_val is not None else None,
+            )
+        )
+
+    return GoalTrends(
+        goal=GoalRead.model_validate(goal, from_attributes=True),
+        periods=points,
+    )
