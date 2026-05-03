@@ -99,6 +99,25 @@ spec:
               value: {{ .Values.backend.env.ACCESS_TOKEN_EXPIRE_MINUTES | quote }}
             - name: ALLOWED_ORIGINS
               value: {{ if .Values.ingress.enabled }}{{ printf "[\"https://%s\", \"http://%s\"]" (index .Values.ingress.hosts 0).host (index .Values.ingress.hosts 0).host | quote }}{{ else }}{{ .Values.backend.allowedOrigins | toJson | quote }}{{ end }}
+            - name: STRAVA_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.strava.secretName" . | trim }}
+                  key: {{ .Values.strava.secretKeys.stravaId }}
+            - name: STRAVA_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.strava.secretName" . | trim }}
+                  key: {{ .Values.strava.secretKeys.stravaSecret }}
+            - name: TOKEN_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "accountabilidash.strava.secretName" . | trim }}
+                  key: {{ .Values.strava.secretKeys.tokenEncryptionKey }}
+            - name: STRAVA_REDIRECT_URI
+              value: {{ .Values.strava.redirectUri | quote }}
+            - name: FRONTEND_URL
+              value: {{ .Values.strava.frontendUrl | quote }}
           livenessProbe:
             httpGet:
               path: /api/v1/health

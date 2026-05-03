@@ -33,12 +33,32 @@ postgres:
     storage:
       size: 8Gi
       storageClass: ""
+    # Set to a pre-existing Secret name (e.g. managed by ESO) to skip chart-rendered Secret.
+    # Secret must have 'username', 'password', and 'postgres-password' keys (kubernetes.io/basic-auth).
+    existingSecret: ""
+    existingSecretPasswordKey: "password"
   # External connection (required when useCloudNativePG is false)
   external:
     host: ""
     port: "5432"
     existingSecret: ""
     passwordKey: "password"
+
+# ── Strava OAuth ─────────────────────────────────────────────────────────────
+# Set existingSecret to skip chart-rendered Secret (e.g. use an ESO-managed secret).
+# Secret must contain the keys listed under secretKeys below.
+strava:
+  redirectUri: "http://localhost/api/v1/auth/strava/callback"
+  frontendUrl: "http://localhost"
+  existingSecret: ""
+  secretKeys:
+    stravaId: "strava-id"
+    stravaSecret: "strava-secret"
+    tokenEncryptionKey: "token-encryption-key"
+  # Plain values used only when existingSecret is empty
+  id: ""
+  secret: ""
+  tokenEncryptionKey: ""
 
 # ── Backend (FastAPI) ────────────────────────────────────────────────────────
 backend:

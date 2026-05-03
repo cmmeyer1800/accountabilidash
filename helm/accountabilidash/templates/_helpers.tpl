@@ -123,24 +123,49 @@ Postgres port for backend connection. CNPG uses 5432, external uses postgres.ext
 {{- end }}
 
 {{/*
-Postgres secret name for password. CNPG: chart-created secret. External: user-provided.
+Postgres secret name for password.
+- CNPG + existingSecret: use that secret (e.g. ESO-managed)
+- CNPG (no existingSecret): chart-rendered secret
+- External: postgres.external.existingSecret
 */}}
 {{- define "accountabilidash.postgres.secretName" -}}
 {{- if .Values.postgres.useCloudNativePG -}}
+{{- if .Values.postgres.cnpg.existingSecret -}}
+{{- .Values.postgres.cnpg.existingSecret -}}
+{{- else -}}
 {{- include "accountabilidash.fullname" . }}-postgres
+{{- end -}}
 {{- else -}}
 {{- .Values.postgres.external.existingSecret -}}
 {{- end -}}
 {{- end }}
 
 {{/*
-Postgres secret key for password. CNPG uses password, external uses postgres.external.passwordKey.
+Postgres secret key for password.
+- CNPG + existingSecret: postgres.cnpg.existingSecretPasswordKey
+- CNPG (no existingSecret): "password"
+- External: postgres.external.passwordKey
 */}}
 {{- define "accountabilidash.postgres.passwordKey" -}}
 {{- if .Values.postgres.useCloudNativePG -}}
+{{- if .Values.postgres.cnpg.existingSecret -}}
+{{- .Values.postgres.cnpg.existingSecretPasswordKey | default "password" -}}
+{{- else -}}
 password
+{{- end -}}
 {{- else -}}
 {{- .Values.postgres.external.passwordKey | default "password" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Strava secret name. Uses existingSecret when set, otherwise chart-rendered secret.
+*/}}
+{{- define "accountabilidash.strava.secretName" -}}
+{{- if .Values.strava.existingSecret -}}
+{{- .Values.strava.existingSecret -}}
+{{- else -}}
+{{- include "accountabilidash.fullname" . }}-strava
 {{- end -}}
 {{- end }}
 

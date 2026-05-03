@@ -13,10 +13,9 @@ spec:
       database: {{ .Values.postgres.auth.database }}
       owner: {{ .Values.postgres.auth.username }}
       secret:
-        name: {{ include "accountabilidash.fullname" . }}-postgres
-  # Use our secret for postgres superuser so app can connect with postgres.auth.password
+        name: {{ include "accountabilidash.postgres.secretName" . | trim }}
   superuserSecret:
-    name: {{ include "accountabilidash.fullname" . }}-postgres
+    name: {{ include "accountabilidash.postgres.secretName" . | trim }}
   storage:
     size: {{ .Values.postgres.cnpg.storage.size }}
     {{- if .Values.postgres.cnpg.storage.storageClass }}
