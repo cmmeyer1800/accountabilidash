@@ -159,6 +159,17 @@ password
 {{- end }}
 
 {{/*
+Backend secret name. Uses existingSecret when set, otherwise chart-rendered secret.
+*/}}
+{{- define "accountabilidash.backend.secretName" -}}
+{{- if .Values.backend.existingSecret -}}
+{{- .Values.backend.existingSecret -}}
+{{- else -}}
+{{- include "accountabilidash.fullname" . }}-backend
+{{- end -}}
+{{- end }}
+
+{{/*
 Strava secret name. Uses existingSecret when set, otherwise chart-rendered secret.
 */}}
 {{- define "accountabilidash.strava.secretName" -}}

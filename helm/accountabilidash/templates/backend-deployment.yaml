@@ -83,7 +83,7 @@ spec:
             - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "accountabilidash.fullname" . }}-backend
+                  name: {{ include "accountabilidash.backend.secretName" . | trim }}
                   key: secret-key
             - name: DEBUG
               value: {{ .Values.backend.env.DEBUG | quote }}

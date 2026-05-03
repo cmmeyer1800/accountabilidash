@@ -85,6 +85,9 @@ backend:
     ALLOW_REGISTRATION: "true"
     ACCESS_TOKEN_EXPIRE_MINUTES: "120"
   secretKey: ""
+  # Set to a pre-existing Secret name (e.g. managed by ESO) to skip chart-rendered Secret.
+  # Secret must have a 'secret-key' key.
+  existingSecret: ""
   # Override allowed origins - will be set to ingress host(s) when ingress enabled
   allowedOrigins: []
 
