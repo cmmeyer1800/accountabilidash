@@ -35,6 +35,7 @@ services:
       LOG_JSON: "false"
       ALLOW_REGISTRATION: "true"
       ALLOWED_ORIGINS: '["http://localhost"]'
+      LOKI_URL: "https://loki.homelab.internal"
     env_file:
       - .env
     depends_on:

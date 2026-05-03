@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     # ── Logging ──────────────────────────────────────────────────────────
     log_level: str = "INFO"
     log_json: bool = False  # Set True in production for structured JSON logs
+    loki_url: str | None = None  # e.g. http://loki:3100
 
 
 @lru_cache
